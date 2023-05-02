@@ -1,0 +1,5 @@
+GoogleNews
+newspaper3k
+openai
+streamlit
+streamlit_extras
