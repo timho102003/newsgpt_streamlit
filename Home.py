@@ -97,7 +97,7 @@ with c2:
                             with st.spinner("Summarizing ..."):
                                 if st.session_state["OPENAI_API_KEY"] != "unknown":
                                     if hex_dig not in st.session_state["search_history"].keys():
-                                        response, err_list = content.summarize(nums=3)
+                                        response, err_list = content.summarize(nums=3, openai_key=st.session_state["OPENAI_API_KEY"])
                                         st.session_state["search_history"][hex_dig] = {"content": content, "response": response}
                                     with st.expander("Summary of 3 Similar Topics"):
                                         st.markdown("### GPT Summary:")

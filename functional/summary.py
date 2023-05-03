@@ -1,6 +1,7 @@
 import os
 import openai
 import json
+import requests
 import streamlit as st
 from newspaper import Article
 from newspaper import Config
@@ -37,7 +38,11 @@ class SummaryContent(object):
             where the differences are presented in the format of source A reporting a price of $10, while source B reports a price of $15.
             response should be formed organized and neat.
         '''
-        openai.api_key = st.session_state["OPENAI_API_KEY"]
+        self.openai_payload = {
+            "model": "gpt-3.5-turbo",
+            "messages": "",
+            "temperature": 0.7,
+        }
         
     def _save_to_attr(self, article, date=None, media=""):
         self.title = article.title
@@ -76,44 +81,62 @@ class SummaryContent(object):
             self.related_articles.append(f"source media: {related['media']}, content: {article.text}")
             self.related_articles_meta.append(article.meta_data)
 
-    def summarize(self, prompt="", nums=5):
+    def summarize(self, prompt="", nums=5, openai_key=""):
         self._trasform_related(nums=nums)
-        answer, err_list = self._ask(prompt=prompt)
+        answer, err_list = self._ask(prompt=prompt, openai_key=openai_key)
         return answer, err_list
     
-    def _ask(self, prompt="Summarize the above article in few sentences, and preserve all the important information such as people, location, time, number, event, etc."):
+    def _ask(self, prompt="Summarize the above article in few sentences, and preserve all the important information such as people, location, time, number, event, etc.", openai_key=""):
         summary_list = []
         error_list = []
+
+        header = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {openai_key}",
+            }
+
         for idx, r in enumerate(self.related_articles):
             messages=[
                     {"role": "system", "content": "You are a very professional news artlce summization and analysis agent."},
                     {"role": "user", "content": r + " " + prompt},
                 ]
-            try:
-                response = openai.ChatCompletion.create(
-                                                    model="gpt-3.5-turbo",
-                                                    messages=messages,
-                                                )
+            self.openai_payload.update({"messages": messages})
+            # try:
+            response = requests.post(
+                    url="https://api.openai.com/v1/chat/completions",
+                    headers=header,
+                    data=json.dumps(self.openai_payload),
+                )
+            response = response.json()
+            if "error" in response:
+                st.error(f"Fail to process {idx} article")
+                error_list.append(response["error"]["message"])
+            else:
                 answer = response["choices"][0]["message"]["content"].strip()
                 summary_list.append(answer)
                 error_list.append("")
                 st.success(f"success process {idx} article")
-            except Exception as e:
-                st.error(f"success process {idx} article")
-                error_list.append(e)
+            # except Exception as e:
         
         summary_list = ".".join(summary_list) + " " + self.prompt
         messages = [
                     {"role": "system", "content": "You are a very professional news artlce summization and analysis agent."},
                     {"role": "user", "content": summary_list},
                 ]
-        try:
-            response = openai.ChatCompletion.create(
-                                                model="gpt-3.5-turbo",
-                                                messages=messages,
-                                            )
+        self.openai_payload.update({"messages": messages})
+
+
+        response = requests.post(
+                    url="https://api.openai.com/v1/chat/completions",
+                    headers=header,
+                    data=json.dumps(self.openai_payload),
+                )
+        response = response.json()
+        if "error" in response:
+            st.error(f"Fail to process final summary")
+            answer = response["error"]["message"]
+        else:
             answer = response["choices"][0]["message"]["content"].strip()
-        except Exception as e:
-            answer = e
+            st.success(f"success process final summary")
 
         return answer, error_list
