@@ -73,10 +73,12 @@ with c2:
         st.markdown(f"<br></br>", unsafe_allow_html=True)
         # st.session_state["contents"] = search(keys=st.session_state["current_search"], news_num=10)
         # st.session_state["contents"] = json.loads(st.session_state["contents"])["results"]
-        form_summarycontent()
+        # st.session_state["raw_contents"] = search(keys=st.session_state["current_search"], news_num=10)
+        form_summarycontent(search(keys=st.session_state["current_search"], news_num=10))
         if "contents" in st.session_state:
             if st.session_state["contents"] is None or len(st.session_state["contents"]) == 0:
                 st.warning("No Result")
+                switch_page("home")
             else:
                 with c2:
                     current_content_len = len(st.session_state["contents"])

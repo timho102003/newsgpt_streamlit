@@ -11,11 +11,11 @@ def search(keys="", period='1d', news_num=1):
     return json.dumps({"results": results})
 
 @st.cache_data
-def form_summarycontent():
-    st.session_state["raw_contents"] = search(keys=st.session_state["current_search"], news_num=10)
-    st.session_state["raw_contents"] = json.loads(st.session_state["raw_contents"])["results"]
+def form_summarycontent(raw_data={}):
+    raw_data = json.loads(raw_data)
+    # st.session_state["raw_contents"] = search(keys=st.session_state["current_search"], news_num=10)
+    st.session_state["raw_contents"] = raw_data["results"]#json.loads(st.session_state["raw_contents"])["results"]
     st.session_state["contents"] = [SummaryContent(news=r, engine=SearchEngine(lang="en", region="US")) for r in st.session_state["raw_contents"]]
-
 
 def clear():
     st.session_state["current_search"] = ""
